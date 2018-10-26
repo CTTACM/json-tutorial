@@ -16,10 +16,10 @@ enum {
     LEPT_PARSE_ROOT_NOT_SINGULAR
 };
 
-//解析JSON的API函数
+//解析JSON的API函数的声明
 int lept_parse(lept_value* v, const char* json);
 
-//访问结果的函数
+//访问结果的函数的函数声明
 lept_type lept_get_type(const lept_value* v);
 
 #endif /* LEPTJSON_H__ */
