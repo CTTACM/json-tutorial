@@ -1,3 +1,11 @@
+/*
+测试的是各个解析函数。
+解析函数在执行过程中，对每一种情况（遇到那种错误就返回那种错误的字符变量）都有表示相应意思的变量反回。
+如果解析函数顺利执行，也即没有察觉错误，就返回LEPT_PARSE_OK
+测试函数的原理就是，输入一些值（包括错误的、正确的），和这个值在执行解析函数时应该返回的值。查看是否匹配。
+如果能够对应成功，test_pass就加一
+如果不能成功就，返回哪个测试是通不过的。
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,13 +26,48 @@ static int test_pass = 0;
         }\
     } while(0)
 
+/* %g
+%g用来输出实数，它根据数值的大小，自动选f格式或e格式（选择输出时占宽度较小的一种），且不输出无意义的0。即%g是根据结果自动选择科学记数法还是一般的小数记数法
+printf("%g\n", 0.00001234);
+printf("%g\n", 0.0001234);
+printf("%.2g\n", 123.45);
+printf("%.2g\n", 23.45);
+上面四句输出结果为:
+1.234e-05
+0.0001234
+1.2e+02
+23
+对于指数小于-4或者大于给定精度的数值,按照%e的控制输出,否则按照%f的控制输出.
+*/
+/*
+memcmp是比较内存区域buf1和buf2的前count个字节。该函数是按字节比较的。
+头文件
+#include <string.h>
+int memcmp(const void *buf1, const void *buf2, unsigned int count);
+比较内存区域buf1和buf2的前count个字节。
+头文件
+#include <string.h>或#include<memory.h>
+返回值
+当buf1<buf2时，返回值<0
+当buf1=buf2时，返回值=0
+当buf1>buf2时，返回值>0
+*/
+//对于数值只需要检查值是否相等就ok了
 #define EXPECT_EQ_INT(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%d")
 #define EXPECT_EQ_DOUBLE(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%.17g")
+//对于字符串，要检查长度和内容两个方面
 #define EXPECT_EQ_STRING(expect, actual, alength) \
     EXPECT_EQ_BASE(sizeof(expect) - 1 == alength && memcmp(expect, actual, alength) == 0, expect, actual, "%s")
+//这两个宏好像没有使用
 #define EXPECT_TRUE(actual) EXPECT_EQ_BASE((actual) != 0, "true", "false", "%s")
 #define EXPECT_FALSE(actual) EXPECT_EQ_BASE((actual) == 0, "false", "true", "%s")
 
+/*
+1 建立并初始化v
+2 执行解析过程，判断解析过程是否报错
+3 （解析过程如果不报错，数据类型就会被改为正确的类型）检查数据类型是否匹配
+4 释放空间v
+*/
 static void test_parse_null() {
     lept_value v;
     lept_init(&v);
@@ -52,6 +95,8 @@ static void test_parse_false() {
     lept_free(&v);
 }
 
+//每一种类型的测试都会遇到各种不同的错误情况，对于不同的情况要有不同的错误记录
+//对每个值都进行多项检查，包括：是否能顺利解析、解析后类型是否修改、解析后得到的值与本来的值是否相同
 #define TEST_NUMBER(expect, json)\
     do {\
         lept_value v;\
@@ -62,6 +107,7 @@ static void test_parse_false() {
         lept_free(&v);\
     } while(0)
 
+//各种数值测试案例
 static void test_parse_number() {
     TEST_NUMBER(0.0, "0");
     TEST_NUMBER(0.0, "-0");
@@ -94,6 +140,7 @@ static void test_parse_number() {
     TEST_NUMBER(-1.7976931348623157e+308, "-1.7976931348623157e+308");
 }
 
+
 #define TEST_STRING(expect, json)\
     do {\
         lept_value v;\
@@ -104,6 +151,7 @@ static void test_parse_number() {
         lept_free(&v);\
     } while(0)
 
+//各种字符测试案例
 static void test_parse_string() {
     TEST_STRING("", "\"\"");
     TEST_STRING("Hello", "\"Hello\"");
@@ -113,6 +161,7 @@ static void test_parse_string() {
 #endif
 }
 
+//对于各种错误的测试，也就是故意写错误的case，然后查看返回值是否和应该的返回值相同
 #define TEST_ERROR(error, json)\
     do {\
         lept_value v;\
@@ -205,6 +254,7 @@ static void test_access_string() {
     EXPECT_EQ_STRING("Hello", lept_get_string(&v), lept_get_string_length(&v));
     lept_free(&v);
 }
+
 
 static void test_parse() {
     test_parse_null();
