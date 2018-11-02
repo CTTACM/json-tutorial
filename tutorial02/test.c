@@ -1,3 +1,11 @@
+/*
+测试的是各个解析函数。
+解析函数在执行过程中，对每一种情况（遇到那种错误就返回那种错误的字符变量）都有表示相应意思的变量反回。
+如果解析函数顺利执行，也即没有察觉错误，就返回LEPT_PARSE_OK
+测试函数的原理就是，输入一些值（包括错误的、正确的），和这个值在执行解析函数时应该返回的值。查看是否匹配。
+如果能够对应成功，test_pass就加一
+如果不能成功就，返回哪个测试是通不过的。
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +15,7 @@ static int main_ret = 0;
 static int test_count = 0;
 static int test_pass = 0;
 
+// 统计测试案例个数和通过案例个数
 #define EXPECT_EQ_BASE(equality, expect, actual, format) \
     do {\
         test_count++;\
@@ -18,6 +27,19 @@ static int test_pass = 0;
         }\
     } while(0)
 
+/* %g
+%g用来输出实数，它根据数值的大小，自动选f格式或e格式（选择输出时占宽度较小的一种），且不输出无意义的0。即%g是根据结果自动选择科学记数法还是一般的小数记数法
+printf("%g\n", 0.00001234);
+printf("%g\n", 0.0001234);
+printf("%.2g\n", 123.45);
+printf("%.2g\n", 23.45);
+上面四句输出结果为:
+1.234e-05
+0.0001234
+1.2e+02
+23
+对于指数小于-4或者大于给定精度的数值,按照%e的控制输出,否则按照%f的控制输出.
+*/
 #define EXPECT_EQ_INT(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%d")
 #define EXPECT_EQ_DOUBLE(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%.17g")
 
