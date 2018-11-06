@@ -11,6 +11,7 @@ static int main_ret = 0;
 static int test_count = 0;
 static int test_pass = 0;
 
+// 计次 
 #define EXPECT_EQ_BASE(equality, expect, actual, format) \
     do {\
         test_count++;\
@@ -22,13 +23,21 @@ static int test_pass = 0;
         }\
     } while(0)
 
-#define EXPECT_EQ_INT(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%d")
-#define EXPECT_EQ_DOUBLE(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%.17g")
+// 是否一致
+#define EXPECT_EQ_INT(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%d") 
+#define EXPECT_EQ_DOUBLE(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%.17g") 
 #define EXPECT_EQ_STRING(expect, actual, alength) \
-    EXPECT_EQ_BASE(sizeof(expect) - 1 == alength && memcmp(expect, actual, alength) == 0, expect, actual, "%s")
-#define EXPECT_TRUE(actual) EXPECT_EQ_BASE((actual) != 0, "true", "false", "%s")
-#define EXPECT_FALSE(actual) EXPECT_EQ_BASE((actual) == 0, "false", "true", "%s")
+    EXPECT_EQ_BASE(sizeof(expect) - 1 == alength && memcmp(expect, actual, alength) == 0, expect, actual, "%s") 
+#define EXPECT_TRUE(actual) EXPECT_EQ_BASE((actual) != 0, "true", "false", "%s") 
+#define EXPECT_FALSE(actual) EXPECT_EQ_BASE((actual) == 0, "false", "true", "%s") 
 
+/*
+1.声明并初始化节点
+2.调用节点赋值函数，给节点赋值
+3.调用测试宏，看解析函数能否返回正常的响应
+4.销毁节点
+*/
+// 测试null、true、false解析函数对于正常的测试案例能否给予正确的响应
 static void test_parse_null() {
     lept_value v;
     lept_init(&v);
@@ -38,6 +47,7 @@ static void test_parse_null() {
     lept_free(&v);
 }
 
+
 static void test_parse_true() {
     lept_value v;
     lept_init(&v);
@@ -46,7 +56,6 @@ static void test_parse_true() {
     EXPECT_EQ_INT(LEPT_TRUE, lept_get_type(&v));
     lept_free(&v);
 }
-
 static void test_parse_false() {
     lept_value v;
     lept_init(&v);
@@ -56,6 +65,7 @@ static void test_parse_false() {
     lept_free(&v);
 }
 
+// 测试number解析函数对于正常的测试案例能否给予正确的响应
 #define TEST_NUMBER(expect, json)\
     do {\
         lept_value v;\
@@ -66,6 +76,7 @@ static void test_parse_false() {
         lept_free(&v);\
     } while(0)
 
+// 喂案例
 static void test_parse_number() {
     TEST_NUMBER(0.0, "0");
     TEST_NUMBER(0.0, "-0");
@@ -85,7 +96,7 @@ static void test_parse_number() {
     TEST_NUMBER(-1E-10, "-1E-10");
     TEST_NUMBER(1.234E+10, "1.234E+10");
     TEST_NUMBER(1.234E-10, "1.234E-10");
-    TEST_NUMBER(0.0, "1e-10000"); /* must underflow */
+    TEST_NUMBER(0.0, "1e-10000"); /* must underflow 下溢*/
 
     TEST_NUMBER(1.0000000000000002, "1.0000000000000002"); /* the smallest number > 1 */
     TEST_NUMBER( 4.9406564584124654e-324, "4.9406564584124654e-324"); /* minimum denormal */
@@ -98,6 +109,7 @@ static void test_parse_number() {
     TEST_NUMBER(-1.7976931348623157e+308, "-1.7976931348623157e+308");
 }
 
+// 测试string解析函数对于正常的测试案例能否给予正确的响应
 #define TEST_STRING(expect, json)\
     do {\
         lept_value v;\
@@ -108,6 +120,7 @@ static void test_parse_number() {
         lept_free(&v);\
     } while(0)
 
+//喂案例
 static void test_parse_string() {
     TEST_STRING("", "\"\"");
     TEST_STRING("Hello", "\"Hello\"");
@@ -121,6 +134,7 @@ static void test_parse_string() {
     TEST_STRING("\xF0\x9D\x84\x9E", "\"\\ud834\\udd1e\"");  /* G clef sign U+1D11E */
 }
 
+//看看解析函数对于各种错误类型的反应是否与应输出的相对应
 #define TEST_ERROR(error, json)\
     do {\
         lept_value v;\
@@ -131,11 +145,13 @@ static void test_parse_string() {
         lept_free(&v);\
     } while(0)
 
+//正常反应
 static void test_parse_expect_value() {
     TEST_ERROR(LEPT_PARSE_EXPECT_VALUE, "");
     TEST_ERROR(LEPT_PARSE_EXPECT_VALUE, " ");
 }
 
+//非法值
 static void test_parse_invalid_value() {
     TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "nul");
     TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "?");
@@ -150,7 +166,7 @@ static void test_parse_invalid_value() {
     TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "NAN");
     TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "nan");
 }
-
+//根不唯一
 static void test_parse_root_not_singular() {
     TEST_ERROR(LEPT_PARSE_ROOT_NOT_SINGULAR, "null x");
 
@@ -159,29 +175,29 @@ static void test_parse_root_not_singular() {
     TEST_ERROR(LEPT_PARSE_ROOT_NOT_SINGULAR, "0x0");
     TEST_ERROR(LEPT_PARSE_ROOT_NOT_SINGULAR, "0x123");
 }
-
+//数字太大
 static void test_parse_number_too_big() {
     TEST_ERROR(LEPT_PARSE_NUMBER_TOO_BIG, "1e309");
     TEST_ERROR(LEPT_PARSE_NUMBER_TOO_BIG, "-1e309");
 }
-
+//缺失引号
 static void test_parse_missing_quotation_mark() {
     TEST_ERROR(LEPT_PARSE_MISS_QUOTATION_MARK, "\"");
     TEST_ERROR(LEPT_PARSE_MISS_QUOTATION_MARK, "\"abc");
 }
-
+//无效字符托管
 static void test_parse_invalid_string_escape() {
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\v\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\0\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\x12\"");
 }
-
+//无效字符
 static void test_parse_invalid_string_char() {
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_CHAR, "\"\x01\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_CHAR, "\"\x1F\"");
 }
-
+//无效unicode字符
 static void test_parse_invalid_unicode_hex() {
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX, "\"\\u\"");
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX, "\"\\u0\"");
@@ -195,8 +211,9 @@ static void test_parse_invalid_unicode_hex() {
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX, "\"\\u00G0\"");
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX, "\"\\u000/\"");
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX, "\"\\u000G\"");
+    TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_HEX, "\"\\u 123\"");
 }
-
+//无效unicode代理
 static void test_parse_invalid_unicode_surrogate() {
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_SURROGATE, "\"\\uD800\"");
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_SURROGATE, "\"\\uDBFF\"");
@@ -205,6 +222,7 @@ static void test_parse_invalid_unicode_surrogate() {
     TEST_ERROR(LEPT_PARSE_INVALID_UNICODE_SURROGATE, "\"\\uD800\\uE000\"");
 }
 
+//执行测试
 static void test_parse() {
     test_parse_null();
     test_parse_true();
@@ -222,6 +240,13 @@ static void test_parse() {
     test_parse_invalid_unicode_surrogate();
 }
 
+// test_access_xxxx函数
+/*
+1. 声明节点v和初始化
+2. 设置v为想要测试的case
+3. 重复多个步骤2
+4. 释放节点v
+*/
 static void test_access_null() {
     lept_value v;
     lept_init(&v);
@@ -261,6 +286,7 @@ static void test_access_string() {
     lept_free(&v);
 }
 
+// 对四种类型进行测试
 static void test_access() {
     test_access_null();
     test_access_boolean();
@@ -268,6 +294,12 @@ static void test_access() {
     test_access_string();
 }
 
+// 主测试函数
+/*
+_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+启动内存泄漏检测
+http://www.cnblogs.com/cai21811998/p/9872414.html
+*/
 int main() {
 #ifdef _WINDOWS
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -277,3 +309,4 @@ int main() {
     printf("%d/%d (%3.2f%%) passed\n", test_pass, test_count, test_pass * 100.0 / test_count);
     return main_ret;
 }
+
